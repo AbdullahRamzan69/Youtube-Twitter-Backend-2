@@ -1,0 +1,16 @@
+{
+  "name": "youtube2",
+  "version": "1.0.0",
+  "description": "yt backend",
+  "keywords": [
+    "backend",
+    "javascript"
+  ],
+  "license": "ISC",
+  "author": "abdullah",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
