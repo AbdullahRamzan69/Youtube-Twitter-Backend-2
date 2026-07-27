@@ -1,3 +1,6 @@
+// this file is for connection DB 
+
+
 import mongoose from "mongoose";
 import { DB_NAME } from "../constants.js";
 
@@ -11,5 +14,8 @@ const connectDB = async ()=>{
         process.exit(1)
     }
 }   
+
+// an async task returns a promise after completion.
+// it is handled in index.js
 
 export default connectDB
