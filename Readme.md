@@ -14,3 +14,12 @@ step 4 :-
 
 in utils make a asyncHandler.js to make a wrapper function for the routes later so you dant have to use try catch in everyone.
 also make a apiError.js to use Error class of node to make custom errors.
+
+step 5 :-
+
+install bcrypt and jwt
+/////////////////////////////////////Extra /////////////////////////////////////
+
+1:when making a user model we dont save its id because the id is auto created in db in bson(binary json)
+It's MongoDB's internal format for storing data.
+
