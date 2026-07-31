@@ -18,6 +18,10 @@ also make a apiError.js to use Error class of node to make custom errors.
 step 5 :-
 
 install bcrypt and jwt
+make video and user modles
+and also make access and refresh token using jwt
+
+step 6 :-
 /////////////////////////////////////Extra /////////////////////////////////////
 
 1:when making a user model we dont save its id because the id is auto created in db in bson(binary json)
