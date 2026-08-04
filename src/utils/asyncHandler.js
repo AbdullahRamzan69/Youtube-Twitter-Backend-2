@@ -1,9 +1,11 @@
-const asyncHandler = (requestHandler)=>{(req,res,next)=>{
-    Promise.resolve(asyncHandler(req,res,next))
-    .catch((err)=>next(err))
-}}
+// const asyncHandler = (requestHandler)=>{(req,res,next)=>{
+//     Promise.resolve(asyncHandler(req,res,next))
+//     .catch((err)=>next(err))
+// }}
 
-export {asyncHandler}
+// export {asyncHandler}
+
+/// with async/await
 
 // const asyncHandler = ()=>{}
 // //high order function (accepts another function)
@@ -22,4 +24,6 @@ export {asyncHandler}
     }
  } // also made it async
 
+ // this also doesnt need a return statement because the arrow func doest have curly braces
 
+export {asyncHandler}

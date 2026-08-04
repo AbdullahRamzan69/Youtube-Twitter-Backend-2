@@ -22,6 +22,12 @@ make video and user modles
 and also make access and refresh token using jwt
 
 step 6 :-
+
+cloudinary and multer configuration for file uploading
+
+////////// setup done ///////////
+
+
 /////////////////////////////////////Extra /////////////////////////////////////
 
 1:when making a user model we dont save its id because the id is auto created in db in bson(binary json)
