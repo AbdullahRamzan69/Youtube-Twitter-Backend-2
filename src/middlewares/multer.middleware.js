@@ -13,3 +13,9 @@ const storage = multer.diskStorage({
 export const upload = multer({ 
     storage, // storage:storage, 
 }) 
+
+// why needed
+
+/*Because Express cannot handle file uploads by itself.
+
+When a user uploads an image or video, the request is sent as multipart/form-data, not JSON.   */

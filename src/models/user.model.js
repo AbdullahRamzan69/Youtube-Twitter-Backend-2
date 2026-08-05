@@ -17,7 +17,7 @@ const userSchema = new Schema(
             required:true,
             unique:true,
             lowercase:true,
-            trime:true
+            trim:true
         },
         fullName:{
             type:String,
@@ -51,7 +51,7 @@ const userSchema = new Schema(
     ,{timestamps:true})
 
     userSchema.pre('save', async function (next) {
-        if(this.isModified("password")) return next() // this is to check if the password has changed if yes it hashes the password if not then the password is not hashed again
+        if(!this.isModified("password")) return next() // this is to check if the password has changed if yes it hashes the password if not then the password is not hashed again
 
         this.password = await bcrypt.hash(this.password , 10)  //this is to hash the password
         next()
@@ -60,30 +60,30 @@ const userSchema = new Schema(
     // bcrypt take two arguments which field to change and how many rounds to take
 
     userSchema.methods.isPasswordCorrect = async function (password) {
-       return await bcrypt.compare(password,this.password) // returns true or false after comparing     
+       return bcrypt.compare(password,this.password) // returns true or false after comparing     
     }
 
     userSchema.methods.generateAccessToken = function(){
        return jwt.sign(
-           { _id = this._id,
-            email=this.email,
-            username=this.username,
-            fullName=this.fullName
+           { _id : this._id,
+            email:this.email,
+            username:this.username,
+            fullName:this.fullName
         },
         process.env.ACCESS_TOKEN_SECRET,
         {
-            expiresIn:ACCESS_TOKEN_EXPIRY
+            expiresIn:process.env.ACCESS_TOKEN_EXPIRY
         }
         )
     }   
     userSchema.methods.generateRefreshToken = function(){
         return jwt.sign(
-           { _id = this._id,
+           { _id : this._id,
             
         },
         process.env.REFRESH_TOKEN_SECRET,
         {
-            expiresIn:REFRESH_TOKEN_EXPIRY
+            expiresIn:process.env.REFRESH_TOKEN_EXPIRY
         }
         )
     }

@@ -25,6 +25,10 @@ step 6 :-
 
 cloudinary and multer configuration for file uploading
 
+step 7 :- 
+
+setup the router and controller files and test on postman
+
 ////////// setup done ///////////
 
 
