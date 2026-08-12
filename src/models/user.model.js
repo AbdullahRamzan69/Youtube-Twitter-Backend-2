@@ -50,11 +50,10 @@ const userSchema = new Schema(
     }
     ,{timestamps:true})
 
-    userSchema.pre('save', async function (next) {
-        if(!this.isModified("password")) return next() // this is to check if the password has changed if yes it hashes the password if not then the password is not hashed again
+    userSchema.pre('save', async function () {
+        if(!this.isModified("password")) return // this is to check if the password has changed if yes it hashes the password if not then the password is not hashed again
 
         this.password = await bcrypt.hash(this.password , 10)  //this is to hash the password
-        next()
     })
     // arrow func is not used for callback because it has no access to "this" keyword which we need to have the context fo userSchema
     // bcrypt take two arguments which field to change and how many rounds to take
@@ -84,7 +83,7 @@ const userSchema = new Schema(
         process.env.REFRESH_TOKEN_SECRET,
         {
             expiresIn:process.env.REFRESH_TOKEN_EXPIRY
-        }
+        } 
         )
     }
 

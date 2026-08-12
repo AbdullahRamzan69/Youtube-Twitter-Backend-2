@@ -29,6 +29,10 @@ step 7 :-
 
 setup the router and controller files and test on postman
 
+step 8 :-
+
+build the logic for registerUser controller 
+
 ////////// setup done ///////////
 
 

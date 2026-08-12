@@ -3,7 +3,7 @@ class apiError extends Error {
         //these are the things ill pass when creating the error
         statusCode,
         message= "Something went wrong",
-        error=[],
+        errors=[],
         stack=""
     ){
         super(message) // calls the parent Error constructor

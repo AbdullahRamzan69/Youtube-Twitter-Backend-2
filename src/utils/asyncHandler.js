@@ -17,9 +17,13 @@
     try {
         await fn(req,res,next)
     } catch (error) {
+        console.error("Error caught in asyncHandler:");
+        console.error(error.stack);
+        
         res.status(error.code || 500).json({
-            success:false,
-            message:error.message
+            success: false,
+            message: error.message,
+            stack: error.stack // Added for debugging
         })
     }
  } // also made it async
