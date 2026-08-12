@@ -29,11 +29,11 @@ const videoSchema = new Schema(
         },
         isPublished:{
             type:Boolean,
-            default:True
+            default:true
         },
         owner:{
             type:Schema.Types.ObjectId,
-            ref:"Video"
+            ref:"User"
         }
     }
     
