@@ -5,6 +5,10 @@ import { fileUploadCloudinary } from "../utils/cloudinary.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import jwt from "jsonwebtoken"
 
+//req.body contains the data the frontend sends to your backend, such as { oldPassword, newPassword }.
+//req.user contains the logged-in user's information,
+// which your verifyJWT middleware put there after verifying their access token.
+
 const generateAccessAndRefreshToken = async(userId)=>{
     try {
         const user = await User.findOne(userId)
@@ -229,12 +233,41 @@ const refreshAccessToken = asyncHandler(async(req,res)=>{
     throw new apiError(400 , "generation of access token failed")
    }
 
+   const changePassword = asyncHandler(async(req,res)=>{
+    
+    const {oldPassword,newPassword} = req.body
+
+    const user = await User.findById(req.user?.id)
+
+    const correctPassword = await user.isPasswordCorrect(oldPassword)
+
+    if(!correctPassword){
+        throw new apiError(400,"Your given password doesnt match with old password")
+    }
+    user.password = newPassword
+    user.save({validateBeforeSave: false})
+   })
+   return res
+   .status(200)
+   .json( new apiResponse(200,
+    {},
+    "password has been changed"
+   ))
 })
+
+const getCurrentUser = asyncHandler(async(req,res)=>{
+    return res
+    .status(200)
+    .json(200,req.user,"current user fetched successfully")
+})
+
 export {
     registerUser,
     loginUser,
     logoutUser,
     refreshAccessToken,
+    changePassword,
+    getCurrentUser,
 }
 
 //access token = temporary key and refresh token = key used to get a new temporary key.

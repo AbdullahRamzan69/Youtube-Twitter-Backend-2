@@ -33,3 +33,6 @@ export const verifyJWT = asyncHandler(async(req, next) => {
 //Check whether the incoming request belongs to a logged-in user.
 // If it does, put that user into req.user and allow the request to continue.
 //The user sends their Access Token with every request. `auth.middleware.js` verifies it.
+
+//verifyJWT takes the access token from the request, verifies it, finds the corresponding user,
+//  stores that user in req.user, and then allows the request to continue.
