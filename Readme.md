@@ -41,3 +41,8 @@ build the logic for registerUser controller
 1:when making a user model we dont save its id because the id is auto created in db in bson(binary json)
 It's MongoDB's internal format for storing data.
 
+
+
+//////////////////////// tasks ///////////////////////
+
+in user.controller we have to remove the old avatr from cloudinary after updating the new one so make this functionality
