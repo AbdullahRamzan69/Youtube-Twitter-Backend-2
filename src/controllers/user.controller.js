@@ -432,7 +432,7 @@ const getWatchHistory = asyncHandler(async(req, res) => {
     const user = await User.aggregate([
         {
             $match: {
-                _id: new mongoose.Types.ObjectId(req.user._id)
+                _id: new mongoose.Types.ObjectId(req.user._id) //Finds the specific user who is currently logged in.
             }
         },
         {
@@ -444,13 +444,14 @@ const getWatchHistory = asyncHandler(async(req, res) => {
                 pipeline: [
                     {
                         $lookup: {
-                            from: "users",
-                            localField: "owner",
-                            foreignField: "_id",
+                            from: "users", // go to User model 
+                            localField: "owner", // this refers to the owner field in Video model as we are now in video
+                            foreignField: "_id", // this searches any users with ids same as the owner of the video and fethces their data
                             as: "owner",
                             pipeline: [
                                 {
-                                    $project: {
+                                    $project: { // this pipeline is for filtering the data that the 
+                                    // owner gives us . ex : we dont want their password
                                         fullName: 1,
                                         username: 1,
                                         avatar: 1
@@ -534,3 +535,21 @@ $skip       → skip documents
 $count       → count documents
 $addFields  → add/modify fields
 */
+
+/*                                                    $Lookup
+from
+↓
+Which collection should I search?
+
+localField
+↓
+Which field from my CURRENT collection should I use?
+
+foreignField
+↓
+Which field from the OTHER collection should I match against?
+
+as
+↓
+What should I call the matching results?
+ */

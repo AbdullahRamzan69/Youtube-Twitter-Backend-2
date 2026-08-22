@@ -35,6 +35,12 @@ const userSchema = new Schema(
         },
         watchHistory:[
             {
+                // If you just saved an ObjectId in watchHistory, MongoDB sees it as just a random string of characters (like "65a3...").
+                // It has no idea that this ID belongs to a Video. 
+                // It could be an ID for a User, a Comment, or a Tweet. MongoDB doesn't know and doesn't care.
+               // By adding ref: "Video", you are giving Mongoose (the library that sits between your Node.js code and MongoDB) a map.
+               //  You are telling Mongoose: "Hey, whenever you see an ID inside this watchHistory array,
+               //  I promise you it is an ID that belongs to a document in the Video collection.
                 type:Schema.Types.ObjectId,
                 ref:"Video" 
             }
