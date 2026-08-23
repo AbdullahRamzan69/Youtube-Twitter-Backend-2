@@ -302,7 +302,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
   const avatarLocalPath = req.file?.path;
 
   if (!avatarLocalPath) {
-    throw new ApiError(400, "Avatar file is missing");
+    throw new apiError(400, "Avatar file is missing");
   }
 
   //TODO: delete old image - assignment
@@ -310,7 +310,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
   const avatar = await fileUploadCloudinary(avatarLocalPath);
 
   if (!avatar.url) {
-    throw new ApiError(400, "Error while uploading on avatar");
+    throw new apiError(400, "Error while uploading on avatar");
   }
 
   const user = await User.findByIdAndUpdate(
@@ -325,14 +325,14 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, user, "Avatar image updated successfully"));
+    .json(new apiResponse(200, user, "Avatar image updated successfully"));
 });
 
 const updateUserCoverImage = asyncHandler(async (req, res) => {
   const coverImageLocalPath = req.file?.path;
 
   if (!coverImageLocalPath) {
-    throw new ApiError(400, "Cover image file is missing");
+    throw new apiError(400, "Cover image file is missing");
   }
 
   //TODO: delete old image - assignment
@@ -340,7 +340,7 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
   const coverImage = await fileUploadCloudinary(coverImageLocalPath);
 
   if (!coverImage.url) {
-    throw new ApiError(400, "Error while uploading on avatar");
+    throw new apiError(400, "Error while uploading on avatar");
   }
 
   const user = await User.findByIdAndUpdate(
@@ -355,7 +355,7 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, user, "Cover image updated successfully"));
+    .json(new apiResponse(200, user, "Cover image updated successfully"));
 });
 
 const getUserChannelProfile = asyncHandler(async (req, res) => {
@@ -375,14 +375,14 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     // in this stage we find that how many other users have subscribed to the user we found in the "match" stage
     {
       $lookup: {
-        from: "subscribtions", // The collection you want to join with
+        from: "subscriptions", // The collection you want to join with
         localField: "_id", // The field from the CURRENT collection (users)
-        foreignField: "channel", // The field from the OTHER collection (subscribtions)
+        foreignField: "channel", // The field from the OTHER collection (subscriptions)
         as: "subscribers", // What to call the resulting array of matches
       },
       // in this stage we find , how many other users have been subscribed by the user we found in the "match" stage
       $lookup: {
-        from: "subscribtions",
+        from: "subscriptions",
         localField: "_id",
         foreignField: "subscriber",
         as: "subscribedTo",
@@ -475,7 +475,7 @@ const getWatchHistory = asyncHandler(async(req, res) => {
     return res
     .status(200)
     .json(
-        new ApiResponse(
+        new apiResponse(
             200,
             user[0].watchHistory,
             "Watch history fetched successfully"
@@ -494,6 +494,7 @@ export {
   updateUserAvatar,
   updateUserCoverImage,
   getUserChannelProfile,
+  getWatchHistory,
 };
 
 //access token = temporary key and refresh token = key used to get a new temporary key.
