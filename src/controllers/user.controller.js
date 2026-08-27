@@ -12,7 +12,7 @@ import mongoose from "mongoose";
 
 const generateAccessAndRefreshToken = async (userId) => {
   try {
-    const user = await User.findOne(userId);
+    const user = await User.findById(userId);
     const refreshToken = user.generateRefreshToken(); // generate ref token
     const accessToken = user.generateAccessToken(); // generate acc token
 
@@ -225,7 +225,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       secure: true,
     };
 
-    const { accessToken, newRefreshToken } =
+    const { accessToken, refreshToken: newRefreshToken } =
       await generateAccessAndRefreshToken(user._id);
 
     return res
