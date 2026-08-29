@@ -10,9 +10,9 @@ import {
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";
 
-import router from "./user.routes.js";
+import { Router } from "express";
 
-
+const router = Router();
 // Get all videos
 router.get("/", getAllVideos);
 

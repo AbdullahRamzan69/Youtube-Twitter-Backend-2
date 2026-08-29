@@ -1,7 +1,8 @@
-import { Video } from "../models/video.model";
-import { apiError } from "../utils/apiError";
-import { apiResponse } from "../utils/apiResponse";
-import { asyncHandler } from "../utils/asyncHandler";
+import { Video } from "../models/video.model.js";
+import { apiError } from "../utils/apiError.js";
+import { apiResponse } from "../utils/apiResponse.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { fileUploadCloudinary } from "../utils/cloudinary.js";
 import { Aggregate  } from "mongoose";
 import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
 const getAllVideos = asyncHandler(async (req, res) => {
@@ -46,7 +47,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
 
     const aggregate = Video.aggregate(pipeline);
 
-    const videos = await Video.mongooseAggregatePaginate(aggregate, {
+    const videos = await Video.aggregatePaginate(aggregate, {
         page: Number(page),
         limit: Number(limit)
     });
