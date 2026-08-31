@@ -114,41 +114,10 @@ const deleteComment = asyncHandler(async (req, res) => {
     );
 });
 
-const toggleCommentLike = asyncHandler(async (req, res) => {
 
-    const { commentId } = req.params; // Get comment ID from URL
-
-    const comment = await Comment.findById(commentId); // Check if comment exists
-
-    if (!comment) {
-        throw new apiError(404, "Comment not found");
-    }
-
-    const existingLike = await Like.findOne({
-        comment: commentId,
-        user: req.user._id
-    }); // Check if current user already liked it
-
-    if (existingLike) {
-
-        await Like.findByIdAndDelete(existingLike._id); // Remove like
-
-        return res.status(200).json(
-            new apiResponse(200, {}, "Comment unliked")
-        );
-    }
-
-    const like = await Like.create({
-        comment: commentId,
-        user: req.user._id
-    }); // Create new like
-
-    return res.status(201).json(
-        new apiResponse(
-            201,
-            like,
-            "Comment liked"
-        )
-    );
-});
-export { addComment };
+export { 
+    addComment,
+    getAllComments,
+    updateComment,
+    deleteComment,
+ };
