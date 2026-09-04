@@ -1,10 +1,11 @@
 import { Video } from "../models/video.model.js";
+import { Like } from "../models/like.model.js";
 import { apiError } from "../utils/apiError.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { fileUploadCloudinary } from "../utils/cloudinary.js";
-import { Aggregate  } from "mongoose";
-import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
+import mongoose from "mongoose";
+
 const getAllVideos = asyncHandler(async (req, res) => {
     const {
         page = 1,
@@ -45,6 +46,34 @@ const getAllVideos = asyncHandler(async (req, res) => {
         }
     });
 
+    // Lookup owner details
+    pipeline.push(
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "ownerDetails",
+                pipeline: [
+                    {
+                        $project: {
+                            username: 1,
+                            fullName: 1,
+                            avatar: 1
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $addFields: {
+                ownerDetails: {
+                    $first: "$ownerDetails"
+                }
+            }
+        }
+    );
+
     const aggregate = Video.aggregate(pipeline);
 
     const videos = await Video.aggregatePaginate(aggregate, {
@@ -52,36 +81,55 @@ const getAllVideos = asyncHandler(async (req, res) => {
         limit: Number(limit)
     });
 
+
     return res.status(200).json(
         new apiResponse(200, videos, "Videos fetched successfully")
     );
 });
 
 const getVideoById = asyncHandler(async(req,res)=>{
-
-    const{videoId} = req.params
+    const { videoId } = req.params;
 
     if(!videoId){
-        throw new apiError(401,"NO VIDEO FOUND")
+        throw new apiError(400, "Invalid Video ID");
     }
 
-    const video = await Video.findById(videoId)
+    const video = await Video.findById(videoId).populate("owner", "username avatar fullName");
 
     if(!video){
-        throw new apiError(404, "video not available")
+        throw new apiError(404, "Video not available");
     }
 
-    return res
-    .status(200)
-    .json(
-       new apiResponse(
-        200,
-        video,
-        "video fetched successfully"
-       )
-        
-    )
+    // Increment view count
+    video.views += 1;
+    await video.save({ validateBeforeSave: false });
+
+    // Calculate total likes for this video
+    const likesCount = await Like.countDocuments({ video: videoId });
+
+    // Check if the current user liked this video
+    let isLiked = false;
+    if (req.user) {
+        const userLike = await Like.findOne({
+            video: videoId,
+            likedBy: req.user._id
+        });
+        isLiked = !!userLike;
+    }
+
+    return res.status(200).json(
+        new apiResponse(
+            200,
+            {
+                ...video.toObject(),
+                likesCount,
+                isLiked
+            },
+            "Video fetched successfully"
+        )
+    );
 })
+
 
 const publishVideo = asyncHandler(async(req,res)=>{
     const {title,description,} = req.body // get the uploaded title,desc from body

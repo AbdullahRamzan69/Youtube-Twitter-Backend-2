@@ -7,7 +7,7 @@ import {
     togglePublishStatus
 } from "../controllers/video.controller.js";
 
-import { verifyJWT } from "../middlewares/auth.middleware.js";
+import { verifyJWT, verifyJWTOptional } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";
 
 import { Router } from "express";
@@ -18,7 +18,8 @@ router.get("/", getAllVideos);
 
 
 // Get one video
-router.get("/:videoId", getVideoById);
+router.get("/:videoId", verifyJWTOptional, getVideoById);
+
 
 
 // Publish/upload a video
