@@ -121,6 +121,7 @@ const publishVideo = asyncHandler(async(req,res)=>{
         description,
         videoFile: video.url,
         thumbnail: thumbnailUpload.url,
+        duration: video.duration || 0, // Cloudinary returns the duration
         owner
     });
 
