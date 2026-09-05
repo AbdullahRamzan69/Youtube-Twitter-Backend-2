@@ -367,20 +367,19 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
 
   const channel = await User.aggregate([
     {
-      //in match field i found one specific user document(the channel owner)
       $match: {
         username: username?.toLowerCase(),
       },
     },
-    // in this stage we find that how many other users have subscribed to the user we found in the "match" stage
     {
       $lookup: {
-        from: "subscriptions", // The collection you want to join with
-        localField: "_id", // The field from the CURRENT collection (users)
-        foreignField: "channel", // The field from the OTHER collection (subscriptions)
-        as: "subscribers", // What to call the resulting array of matches
+        from: "subscriptions",
+        localField: "_id",
+        foreignField: "channel",
+        as: "subscribers",
       },
-      // in this stage we find , how many other users have been subscribed by the user we found in the "match" stage
+    },
+    {
       $lookup: {
         from: "subscriptions",
         localField: "_id",
@@ -415,11 +414,12 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         avatar: 1,
         coverImage: 1,
         email: 1,
+        createdAt: 1,
       },
     },
   ]);
   if (!channel?.length) {
-    throw new apiError("404", "channel not found");
+    throw new apiError(404, "channel not found");
   }
   return res
     .status(200)
@@ -427,6 +427,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
       new apiResponse(200, channel[0], "user channel fetched successfully")
     );
 });
+
 
 const getWatchHistory = asyncHandler(async(req, res) => {
     const user = await User.aggregate([

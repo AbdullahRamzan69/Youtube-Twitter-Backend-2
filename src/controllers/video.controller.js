@@ -1,10 +1,12 @@
 import { Video } from "../models/video.model.js";
 import { Like } from "../models/like.model.js";
+import { Subscription } from "../models/subscription.model.js";
 import { apiError } from "../utils/apiError.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { fileUploadCloudinary } from "../utils/cloudinary.js";
 import mongoose from "mongoose";
+
 
 const getAllVideos = asyncHandler(async (req, res) => {
     const {
@@ -117,11 +119,32 @@ const getVideoById = asyncHandler(async(req,res)=>{
         isLiked = !!userLike;
     }
 
+    // Calculate subscribers and subscription status for video owner
+    let subscribersCount = 0;
+    let isSubscribed = false;
+    if (video.owner) {
+        subscribersCount = await Subscription.countDocuments({ channel: video.owner._id });
+        if (req.user) {
+            const sub = await Subscription.findOne({
+                channel: video.owner._id,
+                subscriber: req.user._id
+            });
+            isSubscribed = !!sub;
+        }
+    }
+
+    const ownerObj = video.owner ? {
+        ...video.owner.toObject(),
+        subscribersCount,
+        isSubscribed
+    } : null;
+
     return res.status(200).json(
         new apiResponse(
             200,
             {
                 ...video.toObject(),
+                owner: ownerObj,
                 likesCount,
                 isLiked
             },
@@ -129,6 +152,7 @@ const getVideoById = asyncHandler(async(req,res)=>{
         )
     );
 })
+
 
 
 const publishVideo = asyncHandler(async(req,res)=>{

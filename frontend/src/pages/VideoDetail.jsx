@@ -10,7 +10,18 @@ import {
   BiTrash, 
   BiDotsVerticalRounded 
 } from 'react-icons/bi';
-import { FiSend } from 'react-icons/fi';
+import { FiSend, FiX, FiShare2 } from 'react-icons/fi';
+import { 
+  FaWhatsapp, 
+  FaTwitter, 
+  FaFacebookF, 
+  FaLinkedinIn, 
+  FaRedditAlien, 
+  FaTelegramPlane, 
+  FaEnvelope, 
+  FaCopy, 
+  FaCheck 
+} from 'react-icons/fa';
 
 function VideoDetail() {
   const { videoId } = useParams();
@@ -28,6 +39,11 @@ function VideoDetail() {
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
+
+  // Share modal state
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+
 
   // Recommended videos state
   const [recommendedVideos, setRecommendedVideos] = useState([]);
@@ -158,6 +174,47 @@ function VideoDetail() {
     }
   };
 
+  // Handle Toggle Subscription
+  const handleToggleSubscription = async () => {
+    if (!user) {
+      alert('Please log in to subscribe');
+      return;
+    }
+
+    if (owner._id === user._id) {
+      alert('You cannot subscribe to your own channel');
+      return;
+    }
+
+    const previousState = owner.isSubscribed;
+    const previousCount = owner.subscribersCount || 0;
+
+    // Optimistic update
+    setVideo((prev) => ({
+      ...prev,
+      owner: {
+        ...prev.owner,
+        isSubscribed: !previousState,
+        subscribersCount: previousState ? Math.max(0, previousCount - 1) : previousCount + 1
+      }
+    }));
+
+    try {
+      await api.post(`/subscriptions/c/${owner._id}`);
+    } catch (err) {
+      console.error('Error toggling subscription', err);
+      // Revert optimistic update
+      setVideo((prev) => ({
+        ...prev,
+        owner: {
+          ...prev.owner,
+          isSubscribed: previousState,
+          subscribersCount: previousCount
+        }
+      }));
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] text-white">
@@ -179,7 +236,75 @@ function VideoDetail() {
 
   const owner = video.owner || {};
 
+  const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
+  const videoTitle = video?.title || 'Check out this video';
+
+  const socialPlatforms = [
+    {
+      name: 'WhatsApp',
+      icon: FaWhatsapp,
+      bgColor: 'bg-[#25D366] hover:bg-[#20bd5a]',
+      url: `https://api.whatsapp.com/send?text=${encodeURIComponent(videoTitle + ' ' + currentUrl)}`
+    },
+    {
+      name: 'X (Twitter)',
+      icon: FaTwitter,
+      bgColor: 'bg-[#1DA1F2] hover:bg-[#1a8cd8]',
+      url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(videoTitle)}&url=${encodeURIComponent(currentUrl)}`
+    },
+    {
+      name: 'Facebook',
+      icon: FaFacebookF,
+      bgColor: 'bg-[#1877F2] hover:bg-[#166fe5]',
+      url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`
+    },
+    {
+      name: 'LinkedIn',
+      icon: FaLinkedinIn,
+      bgColor: 'bg-[#0A66C2] hover:bg-[#095196]',
+      url: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(currentUrl)}`
+    },
+    {
+      name: 'Reddit',
+      icon: FaRedditAlien,
+      bgColor: 'bg-[#FF4500] hover:bg-[#e03d00]',
+      url: `https://www.reddit.com/submit?url=${encodeURIComponent(currentUrl)}&title=${encodeURIComponent(videoTitle)}`
+    },
+    {
+      name: 'Telegram',
+      icon: FaTelegramPlane,
+      bgColor: 'bg-[#26A5E4] hover:bg-[#2094ce]',
+      url: `https://t.me/share/url?url=${encodeURIComponent(currentUrl)}&text=${encodeURIComponent(videoTitle)}`
+    },
+    {
+      name: 'Email',
+      icon: FaEnvelope,
+      bgColor: 'bg-gray-600 hover:bg-gray-700',
+      url: `mailto:?subject=${encodeURIComponent(videoTitle)}&body=${encodeURIComponent('Check out this video: ' + currentUrl)}`
+    }
+  ];
+
+  const handleSharePlatform = (shareUrl) => {
+    window.open(shareUrl, '_blank', 'noopener,noreferrer,width=600,height=500');
+  };
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(currentUrl);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2500);
+  };
+
+  const handleNativeShare = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: videoTitle,
+        url: currentUrl
+      }).catch(() => {});
+    }
+  };
+
   return (
+
     <div className="p-4 md:p-6 text-white grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Left Main Video Section */}
       <div className="lg:col-span-2 flex flex-col gap-4">
@@ -200,54 +325,66 @@ function VideoDetail() {
         </div>
 
         {/* Video Title */}
-        <h1 className="text-xl md:text-2xl font-bold line-clamp-2 mt-1">{video.title}</h1>
+        <h1 className="text-xl md:text-2xl font-bold line-clamp-2 mt-1 text-[#f1f1f1] tracking-tight">{video.title}</h1>
 
         {/* Channel Info & Actions Row */}
-        <div className="flex flex-wrap items-center justify-between gap-4 py-2 border-b border-gray-800">
+        <div className="flex flex-wrap items-center justify-between gap-4 py-2 border-b border-[#272727]">
           {/* Owner info */}
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-full bg-gray-700 overflow-hidden shrink-0">
+            <Link to={`/c/${owner.username}`} className="w-10 h-10 rounded-full bg-[#272727] overflow-hidden shrink-0 block hover:opacity-90 transition">
               {owner.avatar ? (
                 <img src={owner.avatar} alt={owner.username} className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full bg-red-600 flex items-center justify-center font-bold text-lg">
+                <div className="w-full h-full bg-[#ff0000] flex items-center justify-center font-bold text-base text-white">
                   {owner.username ? owner.username[0].toUpperCase() : 'C'}
                 </div>
               )}
-            </div>
+            </Link>
             <div>
-              <h3 className="font-semibold text-base hover:text-gray-200 cursor-pointer">
+              <Link to={`/c/${owner.username}`} className="font-bold text-base text-[#f1f1f1] hover:underline cursor-pointer block leading-snug">
                 {owner.fullName || owner.username || 'Channel Name'}
-              </h3>
-              <p className="text-gray-400 text-xs">@{owner.username || 'channel'}</p>
+              </Link>
+              <p className="text-[#aaaaaa] text-xs font-normal">
+                @{owner.username || 'channel'} • {owner.subscribersCount || 0} subscriber{(owner.subscribersCount === 1) ? '' : 's'}
+              </p>
             </div>
-            <button className="ml-4 bg-white text-black font-semibold px-4 py-2 rounded-full text-sm hover:bg-gray-200 transition">
-              Subscribe
-            </button>
+            {user && user._id === owner._id ? (
+              <Link to="/my-channel" className="ml-4 bg-[#272727] text-[#f1f1f1] font-semibold px-4 py-2 rounded-full text-xs hover:bg-[#3f3f3f] transition">
+                Manage Channel
+              </Link>
+            ) : (
+              <button 
+                onClick={handleToggleSubscription}
+                className={`ml-4 font-semibold px-4 py-2 rounded-full text-xs transition cursor-pointer ${
+                  owner.isSubscribed
+                    ? 'bg-[#272727] text-gray-300 hover:bg-[#3f3f3f]'
+                    : 'bg-white text-black hover:bg-[#d9d9d9]'
+                }`}
+              >
+                {owner.isSubscribed ? 'Subscribed' : 'Subscribe'}
+              </button>
+            )}
           </div>
 
           {/* Action buttons (Like, Share) */}
           <div className="flex items-center gap-2">
             <button
               onClick={handleToggleVideoLike}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition cursor-pointer ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition cursor-pointer ${
                 isLiked
-                  ? 'bg-white/20 text-white font-semibold border border-white/30'
-                  : 'bg-[#272727] text-white hover:bg-[#3f3f3f]'
+                  ? 'bg-white/20 text-white font-bold border border-white/30'
+                  : 'bg-[#272727] text-[#f1f1f1] hover:bg-[#3f3f3f]'
               }`}
             >
-              {isLiked ? <BiSolidLike className="text-xl text-red-500" /> : <BiLike className="text-xl" />}
+              {isLiked ? <BiSolidLike className="text-lg text-red-500" /> : <BiLike className="text-lg" />}
               <span>{likesCount}</span>
             </button>
 
             <button 
-              onClick={() => {
-                navigator.clipboard.writeText(window.location.href);
-                alert('Link copied to clipboard!');
-              }}
-              className="flex items-center gap-2 bg-[#272727] hover:bg-[#3f3f3f] px-4 py-2 rounded-full text-sm font-medium text-white transition cursor-pointer"
+              onClick={() => setShowShareModal(true)}
+              className="flex items-center gap-2 bg-[#272727] hover:bg-[#3f3f3f] px-4 py-2 rounded-full text-xs font-semibold text-[#f1f1f1] transition cursor-pointer"
             >
-              <BiShareAlt className="text-xl" />
+              <BiShareAlt className="text-lg" />
               <span>Share</span>
             </button>
           </div>
@@ -256,20 +393,21 @@ function VideoDetail() {
         {/* Video Description Box */}
         <div
           onClick={() => setShowFullDesc(!showFullDesc)}
-          className="bg-[#272727] hover:bg-[#373737] p-4 rounded-xl cursor-pointer transition text-sm text-gray-200 mt-2"
+          className="bg-[#272727] hover:bg-[#383838] p-3.5 rounded-xl cursor-pointer transition text-sm text-[#f1f1f1] mt-2 leading-relaxed"
         >
-          <div className="font-semibold text-white mb-1 flex gap-3">
+          <div className="font-bold text-white mb-1 flex gap-3 text-xs">
             <span>{video.views || 0} views</span>
             <span>•</span>
             <span>{new Date(video.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</span>
           </div>
-          <p className={showFullDesc ? 'whitespace-pre-line' : 'line-clamp-2'}>
+          <p className={showFullDesc ? 'whitespace-pre-line text-sm' : 'line-clamp-2 text-sm'}>
             {video.description || 'No description provided.'}
           </p>
-          <button className="text-gray-400 font-semibold text-xs mt-2 hover:underline">
+          <button className="text-[#aaaaaa] font-bold text-xs mt-2 hover:underline">
             {showFullDesc ? 'Show less' : 'Show more'}
           </button>
         </div>
+
 
         {/* Comments Section */}
         <div className="mt-6 flex flex-col gap-6">
@@ -440,8 +578,95 @@ function VideoDetail() {
           ))
         )}
       </div>
+
+      {/* Share Modal */}
+      {showShareModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#212121] border border-gray-700 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
+              <h3 className="text-lg font-bold text-white">Share</h3>
+              <button
+                onClick={() => setShowShareModal(false)}
+                className="text-gray-400 hover:text-white transition cursor-pointer p-1 rounded-full hover:bg-white/10"
+              >
+                <FiX className="text-xl" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 flex flex-col gap-6">
+              {/* Social Media Platforms Grid */}
+              <div className="grid grid-cols-4 gap-4">
+                {socialPlatforms.map((platform) => {
+                  const Icon = platform.icon;
+                  return (
+                    <button
+                      key={platform.name}
+                      onClick={() => handleSharePlatform(platform.url)}
+                      className="flex flex-col items-center gap-2 group cursor-pointer"
+                    >
+                      <div className={`w-12 h-12 rounded-full ${platform.bgColor} flex items-center justify-center text-white text-xl shadow-lg transition-transform group-hover:scale-110`}>
+                        <Icon />
+                      </div>
+                      <span className="text-xs text-gray-300 group-hover:text-white transition line-clamp-1">
+                        {platform.name}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Copy Link Input Section */}
+              <div className="flex flex-col gap-2 mt-2">
+                <label className="text-xs text-gray-400 font-medium">Page Link</label>
+                <div className="flex items-center bg-[#121212] border border-gray-700 rounded-xl overflow-hidden p-1 focus-within:border-gray-500">
+                  <input
+                    type="text"
+                    readOnly
+                    value={currentUrl}
+                    className="w-full bg-transparent px-3 py-1.5 text-xs text-gray-200 focus:outline-none select-all"
+                  />
+                  <button
+                    onClick={handleCopyLink}
+                    className={`px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition shrink-0 cursor-pointer ${
+                      copiedLink
+                        ? 'bg-green-600 text-white'
+                        : 'bg-white text-black hover:bg-gray-200'
+                    }`}
+                  >
+                    {copiedLink ? (
+                      <>
+                        <FaCheck className="text-xs" />
+                        <span>Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <FaCopy className="text-xs" />
+                        <span>Copy</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Native Device Share (for mobile browsers) */}
+              {typeof navigator !== 'undefined' && navigator.share && (
+                <button
+                  onClick={handleNativeShare}
+                  className="w-full mt-1 bg-[#333333] hover:bg-[#444444] text-white text-xs font-semibold py-2.5 rounded-xl transition flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <FiShare2 className="text-sm" />
+                  <span>Share via device apps</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
 
 export default VideoDetail;
