@@ -74,11 +74,37 @@ function ChannelDetail() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh] text-white">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
+      <div className="min-h-screen pb-12 text-white">
+        <div className="w-full h-44 sm:h-64 bg-[#272727] animate-pulse"></div>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 relative -mt-16 sm:-mt-20">
+          <div className="flex flex-col sm:flex-row items-center sm:items-end justify-between gap-4 pb-6 border-b border-[#272727]">
+            <div className="flex flex-col sm:flex-row items-center sm:items-end gap-5">
+              <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-full bg-[#272727] border-4 border-[#0f0f0f] animate-pulse shrink-0"></div>
+              <div className="flex flex-col gap-2">
+                <div className="h-7 w-48 bg-[#272727] rounded animate-pulse"></div>
+                <div className="h-4 w-32 bg-[#272727] rounded animate-pulse"></div>
+                <div className="h-4 w-40 bg-[#272727] rounded animate-pulse mt-1"></div>
+              </div>
+            </div>
+            <div className="w-32 h-10 bg-[#272727] rounded-full animate-pulse"></div>
+          </div>
+          <div className="mt-8">
+            <div className="h-6 w-44 bg-[#272727] rounded animate-pulse mb-6"></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex flex-col gap-3">
+                  <div className="aspect-video bg-[#272727] rounded-xl animate-pulse"></div>
+                  <div className="h-4 bg-[#272727] rounded animate-pulse w-full"></div>
+                  <div className="h-3 bg-[#272727] rounded animate-pulse w-2/3"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
+
 
   if (error || !channel) {
     return (

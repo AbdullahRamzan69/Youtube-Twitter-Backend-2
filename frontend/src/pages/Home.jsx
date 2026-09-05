@@ -3,6 +3,22 @@ import { Link, useSearchParams } from 'react-router-dom';
 import api from '../api';
 import { FiX } from 'react-icons/fi';
 
+function VideoCardSkeleton() {
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="aspect-video bg-[#272727] rounded-xl animate-pulse"></div>
+      <div className="flex gap-3 px-0.5 mt-1">
+        <div className="w-9 h-9 rounded-full bg-[#272727] animate-pulse shrink-0"></div>
+        <div className="flex flex-col flex-1 gap-2">
+          <div className="h-4 bg-[#272727] rounded animate-pulse w-full"></div>
+          <div className="h-4 bg-[#272727] rounded animate-pulse w-3/4"></div>
+          <div className="h-3 bg-[#272727] rounded animate-pulse w-1/2 mt-1"></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Home() {
   const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get('query') || '';
@@ -34,11 +50,17 @@ function Home() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh] text-white">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
+      <div className="p-4 sm:p-6 max-w-[1800px] mx-auto">
+        <div className="h-7 w-44 bg-[#272727] rounded-lg animate-pulse mb-6"></div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-8">
+          {Array.from({ length: 8 }).map((_, index) => (
+            <VideoCardSkeleton key={index} />
+          ))}
+        </div>
       </div>
     );
   }
+
 
   return (
     <div className="p-4 sm:p-6 max-w-[1800px] mx-auto">

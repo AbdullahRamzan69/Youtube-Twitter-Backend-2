@@ -217,11 +217,49 @@ function VideoDetail() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh] text-white">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
+      <div className="p-4 md:p-6 text-white grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-[1800px] mx-auto">
+        {/* Left main column skeleton */}
+        <div className="lg:col-span-2 flex flex-col gap-4">
+          <div className="w-full aspect-video bg-[#272727] rounded-2xl animate-pulse"></div>
+          <div className="h-7 bg-[#272727] rounded-lg animate-pulse w-3/4 mt-2"></div>
+          
+          <div className="flex items-center justify-between py-3 border-b border-[#272727]">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#272727] animate-pulse"></div>
+              <div className="flex flex-col gap-2">
+                <div className="h-4 w-32 bg-[#272727] rounded animate-pulse"></div>
+                <div className="h-3 w-20 bg-[#272727] rounded animate-pulse"></div>
+              </div>
+              <div className="w-24 h-9 bg-[#272727] rounded-full animate-pulse ml-4"></div>
+            </div>
+            
+            <div className="flex gap-2">
+              <div className="w-20 h-9 bg-[#272727] rounded-full animate-pulse"></div>
+              <div className="w-20 h-9 bg-[#272727] rounded-full animate-pulse"></div>
+            </div>
+          </div>
+          
+          <div className="h-28 bg-[#272727] rounded-xl animate-pulse mt-2"></div>
+        </div>
+
+        {/* Right sidebar column skeleton */}
+        <div className="flex flex-col gap-4">
+          <div className="h-5 w-24 bg-[#272727] rounded animate-pulse mb-1"></div>
+          {Array.from({ length: 5 }).map((_, index) => (
+            <div key={index} className="flex gap-3 p-1">
+              <div className="w-40 aspect-video bg-[#272727] rounded-lg animate-pulse shrink-0"></div>
+              <div className="flex flex-col gap-2 flex-1 mt-1">
+                <div className="h-4 bg-[#272727] rounded animate-pulse w-full"></div>
+                <div className="h-3 bg-[#272727] rounded animate-pulse w-2/3"></div>
+                <div className="h-3 bg-[#272727] rounded animate-pulse w-1/2"></div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
+
 
   if (error || !video) {
     return (
