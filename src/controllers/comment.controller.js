@@ -1,9 +1,39 @@
 import { Comment } from "../models/comment.model.js";
 import { Video } from "../models/video.model.js";
+import { Tweet } from "../models/tweet.model.js";
 import { Like } from "../models/like.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { apiError } from "../utils/apiError.js";
 import { apiResponse } from "../utils/apiResponse.js";
+
+const attachCommentLikes = async (comments, userId) => {
+    if (!comments.length) return [];
+
+    const ids = comments.map((comment) => comment._id);
+
+    const [likeCounts, userLikes] = await Promise.all([
+        Like.aggregate([
+            { $match: { comment: { $in: ids } } },
+            { $group: { _id: "$comment", count: { $sum: 1 } } }
+        ]),
+        userId
+            ? Like.find({ comment: { $in: ids }, likedBy: userId }).select("comment")
+            : Promise.resolve([])
+    ]);
+
+    const likesMap = new Map(likeCounts.map((item) => [item._id.toString(), item.count]));
+    const likedSet = new Set(userLikes.map((like) => like.comment.toString()));
+
+    return comments.map((comment) => {
+        const obj = comment.toObject();
+        const id = obj._id.toString();
+        return {
+            ...obj,
+            likesCount: likesMap.get(id) || 0,
+            isLiked: likedSet.has(id)
+        };
+    });
+};
 
 const addComment = asyncHandler(async (req, res) => {
     // Get video ID from URL
@@ -53,24 +83,60 @@ const getAllComments = asyncHandler(async (req, res) => {
         .populate("user", "username avatar fullName") // Get user information
         .sort({ createdAt: -1 }); // Newest comments first
 
-    const commentsWithLikes = await Promise.all(
-        comments.map(async (comment) => {
-            const likesCount = await Like.countDocuments({ comment: comment._id });
-            let isLiked = false;
-            if (req.user) {
-                const userLike = await Like.findOne({
-                    comment: comment._id,
-                    likedBy: req.user._id
-                });
-                isLiked = !!userLike;
-            }
-            return {
-                ...comment.toObject(),
-                likesCount,
-                isLiked
-            };
-        })
+    const commentsWithLikes = await attachCommentLikes(comments, req.user?._id);
+
+    return res.status(200).json(
+        new apiResponse(
+            200,
+            commentsWithLikes,
+            "Comments fetched successfully"
+        )
     );
+});
+
+const addTweetComment = asyncHandler(async (req, res) => {
+    const { tweetId } = req.params;
+    const { content } = req.body;
+
+    if (!content?.trim()) {
+        throw new apiError(400, "Comment is required");
+    }
+
+    const post = await Tweet.findById(tweetId);
+
+    if (!post) {
+        throw new apiError(404, "Community post not found");
+    }
+
+    const createdComment = await Comment.create({
+        content: content.trim(),
+        tweet: tweetId,
+        user: req.user._id
+    });
+
+    const comment = await Comment.findById(createdComment._id).populate("user", "username avatar fullName");
+
+    return res.status(201).json(
+        new apiResponse(
+            201,
+            {
+                ...comment.toObject(),
+                likesCount: 0,
+                isLiked: false
+            },
+            "Comment added successfully"
+        )
+    );
+});
+
+const getTweetComments = asyncHandler(async (req, res) => {
+    const { tweetId } = req.params;
+
+    const comments = await Comment.find({ tweet: tweetId })
+        .populate("user", "username avatar fullName")
+        .sort({ createdAt: -1 });
+
+    const commentsWithLikes = await attachCommentLikes(comments, req.user?._id);
 
     return res.status(200).json(
         new apiResponse(
@@ -142,6 +208,8 @@ const deleteComment = asyncHandler(async (req, res) => {
 export { 
     addComment,
     getAllComments,
+    addTweetComment,
+    getTweetComments,
     updateComment,
     deleteComment,
-};
+};

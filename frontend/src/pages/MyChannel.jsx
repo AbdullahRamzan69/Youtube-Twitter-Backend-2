@@ -12,6 +12,8 @@ import {
   FiX,
   FiCheck
 } from 'react-icons/fi';
+import CommunityComposer from '../components/CommunityComposer';
+import CommunityPostCard from '../components/CommunityPostCard';
 
 function MyChannel() {
   const { user, login } = useContext(AuthContext);
@@ -19,6 +21,8 @@ function MyChannel() {
 
   const [channelData, setChannelData] = useState(null);
   const [userVideos, setUserVideos] = useState([]);
+  const [posts, setPosts] = useState([]);
+  const [activeTab, setActiveTab] = useState('videos');
   const [loading, setLoading] = useState(true);
 
   // Edit Profile Modal State
@@ -55,10 +59,13 @@ function MyChannel() {
       setFullNameInput(channel.fullName || '');
       setEmailInput(channel.email || '');
 
-      // Fetch videos uploaded by current user
-      const videosRes = await api.get(`/videos?userId=${user._id}`);
+      const [videosRes, postsRes] = await Promise.all([
+        api.get(`/videos?userId=${user._id}`),
+        api.get(`/tweets/user/${user._id}`)
+      ]);
       const docs = videosRes.data.data.docs || videosRes.data.data || [];
       setUserVideos(docs);
+      setPosts(postsRes.data.data || []);
     } catch (err) {
       console.error('Failed to load channel data', err);
     } finally {
@@ -290,7 +297,26 @@ function MyChannel() {
           </div>
         </div>
 
-        {/* Uploaded Videos Section */}
+        <div className="flex gap-6 mt-2 border-b border-gray-800">
+          <button
+            onClick={() => setActiveTab('videos')}
+            className={`py-3 text-sm font-semibold tracking-wide uppercase cursor-pointer border-b-2 transition ${
+              activeTab === 'videos' ? 'text-white border-white' : 'text-gray-400 border-transparent hover:text-white'
+            }`}
+          >
+            Videos
+          </button>
+          <button
+            onClick={() => setActiveTab('community')}
+            className={`py-3 text-sm font-semibold tracking-wide uppercase cursor-pointer border-b-2 transition ${
+              activeTab === 'community' ? 'text-white border-white' : 'text-gray-400 border-transparent hover:text-white'
+            }`}
+          >
+            Community
+          </button>
+        </div>
+
+        {activeTab === 'videos' ? (
         <div className="mt-8">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold">Uploaded Videos ({userVideos.length})</h2>
@@ -380,6 +406,35 @@ function MyChannel() {
             </div>
           )}
         </div>
+        ) : (
+          <div className="mt-8 max-w-2xl">
+            <h2 className="text-xl font-bold mb-6">Community posts</h2>
+            <CommunityComposer
+              user={user}
+              onCreated={(post) => setPosts((prev) => [post, ...prev])}
+              placeholder="Share an update with your subscribers"
+            />
+            {posts.length === 0 ? (
+              <div className="bg-[#181818] p-10 rounded-2xl text-center text-gray-400 border border-gray-800">
+                You have not created any community posts yet.
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {posts.map((post) => (
+                  <CommunityPostCard
+                    key={post._id}
+                    post={post}
+                    currentUser={user}
+                    onDeleted={(id) => setPosts((prev) => prev.filter((p) => p._id !== id))}
+                    onUpdated={(updated) =>
+                      setPosts((prev) => prev.map((p) => (p._id === updated._id ? { ...p, ...updated } : p)))
+                    }
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Edit Channel Profile Modal */}

@@ -8,6 +8,7 @@ import UploadVideo from './pages/UploadVideo';
 import VideoDetail from './pages/VideoDetail';
 import MyChannel from './pages/MyChannel';
 import ChannelDetail from './pages/ChannelDetail';
+import Community from './pages/Community';
 import { AuthProvider } from './context/AuthContext';
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
               <Route path="/video/:videoId" element={<VideoDetail />} />
               <Route path="/my-channel" element={<MyChannel />} />
               <Route path="/c/:username" element={<ChannelDetail />} />
+              <Route path="/community" element={<Community />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/upload" element={<UploadVideo />} />

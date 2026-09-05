@@ -3,7 +3,11 @@ import mongoose, {Schema} from "mongoose";
 const tweetSchema = new Schema({
     content: {
         type: String,
-        required: true
+        default: ""
+    },
+    image: {
+        type: String,
+        default: ""
     },
     owner: {
         type: Schema.Types.ObjectId,

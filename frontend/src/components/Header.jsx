@@ -1,6 +1,7 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { FaYoutube, FaUserCircle, FaPlus, FaSignOutAlt, FaSearch } from 'react-icons/fa';
+import { MdOutlineForum } from 'react-icons/md';
 import { FiX } from 'react-icons/fi';
 import { AuthContext } from '../context/AuthContext';
 
@@ -32,12 +33,22 @@ function Header() {
 
   return (
     <header className="sticky top-0 z-50 bg-[#0f0f0f]/95 backdrop-blur-md text-[#f1f1f1] px-4 h-14 flex justify-between items-center border-b border-[#272727] font-sans">
-      <Link to="/" className="flex items-center gap-1.5 shrink-0 group">
-        <div className="bg-[#ff0000] text-white p-1 rounded-lg group-hover:scale-105 transition-transform">
-          <FaYoutube className="text-xl" />
-        </div>
-        <span className="text-lg font-black tracking-tighter text-white font-sans">YouTube</span>
-      </Link>
+      <div className="flex items-center shrink-0">
+        <Link to="/" className="flex items-center gap-1.5 group">
+          <div className="bg-[#ff0000] text-white p-1 rounded-lg group-hover:scale-105 transition-transform">
+            <FaYoutube className="text-xl" />
+          </div>
+          <span className="text-lg font-black tracking-tighter text-white font-sans">YouTube</span>
+        </Link>
+        <Link
+          to="/community"
+          className="flex items-center gap-1.5 ml-4 text-sm font-medium text-[#aaa] hover:text-white transition"
+          title="Community"
+        >
+          <MdOutlineForum className="text-base" />
+          <span className="hidden sm:inline">Community</span>
+        </Link>
+      </div>
       
       <div className="flex-1 max-w-2xl mx-6">
         <form onSubmit={handleSearchSubmit} className="flex bg-[#121212] border border-[#303030] rounded-full overflow-hidden focus-within:border-[#1c62b9] transition-colors h-10">

@@ -2,18 +2,24 @@ import { Router } from 'express';
 import {
     createTweet,
     deleteTweet,
+    getAllTweets,
+    getTweetById,
     getUserTweets,
     updateTweet,
 } from "../controllers/tweet.controller.js";
-import { verifyJWT } from "../middlewares/auth.middleware.js";
+import { verifyJWT, verifyJWTOptional } from "../middlewares/auth.middleware.js";
+import { upload } from "../middlewares/multer.middleware.js";
 
 const router = Router();
 
-// Apply verifyJWT middleware to all routes in this file
-router.use(verifyJWT);
+router.route("/")
+    .get(verifyJWTOptional, getAllTweets)
+    .post(verifyJWT, upload.single("image"), createTweet);
 
-router.route("/").post(createTweet);
-router.route("/user/:userId").get(getUserTweets);
-router.route("/:tweetId").patch(updateTweet).delete(deleteTweet);
+router.route("/user/:userId").get(verifyJWTOptional, getUserTweets);
+router.route("/:tweetId")
+    .get(verifyJWTOptional, getTweetById)
+    .patch(verifyJWT, updateTweet)
+    .delete(verifyJWT, deleteTweet);
 
 export default router;

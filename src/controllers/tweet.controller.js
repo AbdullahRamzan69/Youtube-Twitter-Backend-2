@@ -1,35 +1,89 @@
 import { Tweet } from "../models/tweet.model.js";
 import { Like } from "../models/like.model.js";
+import { Comment } from "../models/comment.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { apiError } from "../utils/apiError.js";
 import { apiResponse } from "../utils/apiResponse.js";
+import { fileUploadCloudinary } from "../utils/cloudinary.js";
+import mongoose from "mongoose";
+
+const MAX_CONTENT_LENGTH = 5000;
+
+const enrichPosts = async (posts, userId) => {
+    if (!posts.length) return [];
+
+    const ids = posts.map((post) => post._id);
+
+    const [likeCounts, commentCounts, userLikes] = await Promise.all([
+        Like.aggregate([
+            { $match: { tweet: { $in: ids } } },
+            { $group: { _id: "$tweet", count: { $sum: 1 } } }
+        ]),
+        Comment.aggregate([
+            { $match: { tweet: { $in: ids } } },
+            { $group: { _id: "$tweet", count: { $sum: 1 } } }
+        ]),
+        userId
+            ? Like.find({ tweet: { $in: ids }, likedBy: userId }).select("tweet")
+            : Promise.resolve([])
+    ]);
+
+    const likesMap = new Map(likeCounts.map((item) => [item._id.toString(), item.count]));
+    const commentsMap = new Map(commentCounts.map((item) => [item._id.toString(), item.count]));
+    const likedSet = new Set(userLikes.map((like) => like.tweet.toString()));
+
+    return posts.map((post) => {
+        const obj = typeof post.toObject === "function" ? post.toObject() : post;
+        const id = obj._id.toString();
+        return {
+            ...obj,
+            likesCount: likesMap.get(id) || 0,
+            commentsCount: commentsMap.get(id) || 0,
+            isLiked: likedSet.has(id)
+        };
+    });
+};
 
 const createTweet = asyncHandler(async (req, res) => {
-    // 1. Get tweet content from request body
     const { content } = req.body;
+    const imageLocalPath = req.file?.path;
+    const trimmedContent = content?.trim() || "";
 
-    if (!content?.trim()) {
-        throw new apiError(400, "Content is required");
+    if (!trimmedContent && !imageLocalPath) {
+        throw new apiError(400, "Post text or an image is required");
     }
 
-    // 2. Create the tweet
+    if (trimmedContent.length > MAX_CONTENT_LENGTH) {
+        throw new apiError(400, `Content cannot exceed ${MAX_CONTENT_LENGTH} characters`);
+    }
+
+    let image = "";
+    if (imageLocalPath) {
+        const uploaded = await fileUploadCloudinary(imageLocalPath);
+        if (!uploaded?.url) {
+            throw new apiError(400, "Image upload failed");
+        }
+        image = uploaded.url;
+    }
+
     const createdTweet = await Tweet.create({
-        content,
+        content: trimmedContent,
+        image,
         owner: req.user._id
     });
 
     const tweet = await Tweet.findById(createdTweet._id).populate("owner", "username avatar fullName");
 
-    // 3. Send response
     return res.status(201).json(
         new apiResponse(
-            201, 
+            201,
             {
                 ...tweet.toObject(),
                 likesCount: 0,
+                commentsCount: 0,
                 isLiked: false
-            }, 
-            "Tweet created successfully"
+            },
+            "Community post created successfully"
         )
     );
 });
@@ -39,120 +93,109 @@ const getAllTweets = asyncHandler(async (req, res) => {
         .populate("owner", "username avatar fullName")
         .sort({ createdAt: -1 });
 
-    const tweetsWithLikes = await Promise.all(
-        tweets.map(async (tweet) => {
-            const likesCount = await Like.countDocuments({ tweet: tweet._id });
-            let isLiked = false;
-            if (req.user) {
-                const userLike = await Like.findOne({
-                    tweet: tweet._id,
-                    likedBy: req.user._id
-                });
-                isLiked = !!userLike;
-            }
-            return {
-                ...tweet.toObject(),
-                likesCount,
-                isLiked
-            };
-        })
-    );
+    const posts = await enrichPosts(tweets, req.user?._id);
 
     return res.status(200).json(
-        new apiResponse(200, tweetsWithLikes, "Tweets fetched successfully")
+        new apiResponse(200, posts, "Community posts fetched successfully")
     );
 });
 
 const getUserTweets = asyncHandler(async (req, res) => {
-    // 1. Get user ID from URL
     const { userId } = req.params;
 
-    // 2. Find all tweets by this user
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+        throw new apiError(400, "Invalid user id");
+    }
+
     const tweets = await Tweet.find({ owner: userId })
         .populate("owner", "username avatar fullName")
         .sort({ createdAt: -1 });
 
-    const tweetsWithLikes = await Promise.all(
-        tweets.map(async (tweet) => {
-            const likesCount = await Like.countDocuments({ tweet: tweet._id });
-            let isLiked = false;
-            if (req.user) {
-                const userLike = await Like.findOne({
-                    tweet: tweet._id,
-                    likedBy: req.user._id
-                });
-                isLiked = !!userLike;
-            }
-            return {
-                ...tweet.toObject(),
-                likesCount,
-                isLiked
-            };
-        })
-    );
+    const posts = await enrichPosts(tweets, req.user?._id);
 
-    // 3. Send response
     return res.status(200).json(
-        new apiResponse(200, tweetsWithLikes, "User tweets fetched successfully")
+        new apiResponse(200, posts, "Channel community posts fetched successfully")
+    );
+});
+
+const getTweetById = asyncHandler(async (req, res) => {
+    const { tweetId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(tweetId)) {
+        throw new apiError(400, "Invalid post id");
+    }
+
+    const tweet = await Tweet.findById(tweetId).populate("owner", "username avatar fullName");
+
+    if (!tweet) {
+        throw new apiError(404, "Community post not found");
+    }
+
+    const [post] = await enrichPosts([tweet], req.user?._id);
+
+    return res.status(200).json(
+        new apiResponse(200, post, "Community post fetched successfully")
     );
 });
 
 const updateTweet = asyncHandler(async (req, res) => {
-    // 1. Get tweet ID from URL and new content from body
     const { tweetId } = req.params;
     const { content } = req.body;
+    const trimmedContent = content?.trim() || "";
 
-    if (!content?.trim()) {
+    if (!trimmedContent) {
         throw new apiError(400, "Content is required");
     }
 
-    // 2. Find tweet
+    if (trimmedContent.length > MAX_CONTENT_LENGTH) {
+        throw new apiError(400, `Content cannot exceed ${MAX_CONTENT_LENGTH} characters`);
+    }
+
     const tweet = await Tweet.findById(tweetId);
 
     if (!tweet) {
-        throw new apiError(404, "Tweet not found");
+        throw new apiError(404, "Community post not found");
     }
 
-    // 3. Check ownership
     if (tweet.owner.toString() !== req.user._id.toString()) {
-        throw new apiError(403, "You cannot update this tweet");
+        throw new apiError(403, "You cannot update this post");
     }
 
-    // 4. Update and save
-    tweet.content = content;
+    tweet.content = trimmedContent;
     await tweet.save();
 
     const updatedTweet = await Tweet.findById(tweetId).populate("owner", "username avatar fullName");
+    const [post] = await enrichPosts([updatedTweet], req.user._id);
 
-    // 5. Send response
     return res.status(200).json(
-        new apiResponse(200, updatedTweet, "Tweet updated successfully")
+        new apiResponse(200, post, "Community post updated successfully")
     );
 });
 
 const deleteTweet = asyncHandler(async (req, res) => {
-    // 1. Get tweet ID from URL
     const { tweetId } = req.params;
 
-    // 2. Find tweet
     const tweet = await Tweet.findById(tweetId);
 
     if (!tweet) {
-        throw new apiError(404, "Tweet not found");
+        throw new apiError(404, "Community post not found");
     }
 
-    // 3. Check ownership
     if (tweet.owner.toString() !== req.user._id.toString()) {
-        throw new apiError(403, "You cannot delete this tweet");
+        throw new apiError(403, "You cannot delete this post");
     }
 
-    // 4. Delete from database and clean associated likes
-    await Tweet.findByIdAndDelete(tweetId);
-    await Like.deleteMany({ tweet: tweetId });
+    const commentIds = await Comment.find({ tweet: tweetId }).distinct("_id");
 
-    // 5. Send response
+    await Promise.all([
+        Tweet.findByIdAndDelete(tweetId),
+        Like.deleteMany({ tweet: tweetId }),
+        Comment.deleteMany({ tweet: tweetId }),
+        commentIds.length ? Like.deleteMany({ comment: { $in: commentIds } }) : Promise.resolve()
+    ]);
+
     return res.status(200).json(
-        new apiResponse(200, {}, "Tweet deleted successfully")
+        new apiResponse(200, {}, "Community post deleted successfully")
     );
 });
 
@@ -160,7 +203,7 @@ export {
     createTweet,
     getAllTweets,
     getUserTweets,
+    getTweetById,
     updateTweet,
     deleteTweet
 };
-

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../api';
 import { AuthContext } from '../context/AuthContext';
+import CommunityPostCard from '../components/CommunityPostCard';
 
 function ChannelDetail() {
   const { username } = useParams();
@@ -9,11 +10,14 @@ function ChannelDetail() {
 
   const [channel, setChannel] = useState(null);
   const [videos, setVideos] = useState([]);
+  const [posts, setPosts] = useState([]);
+  const [activeTab, setActiveTab] = useState('videos');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchChannelAndVideos();
+    setActiveTab('videos');
   }, [username]);
 
   const fetchChannelAndVideos = async () => {
@@ -25,11 +29,14 @@ function ChannelDetail() {
       const channelData = channelRes.data.data;
       setChannel(channelData);
 
-      // Fetch videos belonging to this channel
       if (channelData._id) {
-        const videosRes = await api.get(`/videos?userId=${channelData._id}`);
+        const [videosRes, postsRes] = await Promise.all([
+          api.get(`/videos?userId=${channelData._id}`),
+          api.get(`/tweets/user/${channelData._id}`)
+        ]);
         const docs = videosRes.data.data.docs || videosRes.data.data || [];
         setVideos(docs);
+        setPosts(postsRes.data.data || []);
       }
     } catch (err) {
       console.error('Failed to fetch channel details', err);
@@ -176,47 +183,91 @@ function ChannelDetail() {
           </div>
         </div>
 
-        {/* Videos Grid */}
-        <div className="mt-8">
-          <h2 className="text-xl font-bold mb-6">Videos</h2>
-
-          {videos.length === 0 ? (
-            <div className="bg-[#181818] p-10 rounded-2xl text-center text-gray-400 border border-gray-800">
-              This channel has not uploaded any videos yet.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {videos.map((video) => (
-                <Link
-                  to={`/video/${video._id}`}
-                  key={video._id}
-                  className="flex flex-col gap-2 cursor-pointer group bg-[#181818] border border-gray-800 p-2.5 rounded-xl hover:border-gray-700 transition"
-                >
-                  <div className="aspect-video bg-gray-800 rounded-lg overflow-hidden relative">
-                    <img
-                      src={video.thumbnail}
-                      alt={video.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    {video.duration ? (
-                      <span className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-1 rounded font-mono">
-                        {(video.duration / 60).toFixed(2)}
-                      </span>
-                    ) : null}
-                  </div>
-                  <div className="flex flex-col gap-1 mt-1">
-                    <h3 className="text-white font-medium text-sm line-clamp-2 leading-snug group-hover:text-red-400 transition-colors">
-                      {video.title}
-                    </h3>
-                    <p className="text-gray-400 text-xs">
-                      {video.views || 0} views • {new Date(video.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
+        {/* Channel tabs */}
+        <div className="flex gap-6 mt-2 border-b border-gray-800">
+          <button
+            onClick={() => setActiveTab('videos')}
+            className={`py-3 text-sm font-semibold tracking-wide uppercase cursor-pointer border-b-2 transition ${
+              activeTab === 'videos' ? 'text-white border-white' : 'text-gray-400 border-transparent hover:text-white'
+            }`}
+          >
+            Videos
+          </button>
+          <button
+            onClick={() => setActiveTab('community')}
+            className={`py-3 text-sm font-semibold tracking-wide uppercase cursor-pointer border-b-2 transition ${
+              activeTab === 'community' ? 'text-white border-white' : 'text-gray-400 border-transparent hover:text-white'
+            }`}
+          >
+            Community
+          </button>
         </div>
+
+        {activeTab === 'videos' ? (
+          <div className="mt-8">
+            <h2 className="text-xl font-bold mb-6">Videos</h2>
+
+            {videos.length === 0 ? (
+              <div className="bg-[#181818] p-10 rounded-2xl text-center text-gray-400 border border-gray-800">
+                This channel has not uploaded any videos yet.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {videos.map((video) => (
+                  <Link
+                    to={`/video/${video._id}`}
+                    key={video._id}
+                    className="flex flex-col gap-2 cursor-pointer group bg-[#181818] border border-gray-800 p-2.5 rounded-xl hover:border-gray-700 transition"
+                  >
+                    <div className="aspect-video bg-gray-800 rounded-lg overflow-hidden relative">
+                      <img
+                        src={video.thumbnail}
+                        alt={video.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      {video.duration ? (
+                        <span className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-1 rounded font-mono">
+                          {(video.duration / 60).toFixed(2)}
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="flex flex-col gap-1 mt-1">
+                      <h3 className="text-white font-medium text-sm line-clamp-2 leading-snug group-hover:text-red-400 transition-colors">
+                        {video.title}
+                      </h3>
+                      <p className="text-gray-400 text-xs">
+                        {video.views || 0} views • {new Date(video.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="mt-8 max-w-2xl">
+            <h2 className="text-xl font-bold mb-6">Community</h2>
+            {posts.length === 0 ? (
+              <div className="bg-[#181818] p-10 rounded-2xl text-center text-gray-400 border border-gray-800">
+                This channel has not posted to the community yet.
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {posts.map((post) => (
+                  <CommunityPostCard
+                    key={post._id}
+                    post={post}
+                    currentUser={user}
+                    onDeleted={(id) => setPosts((prev) => prev.filter((p) => p._id !== id))}
+                    onUpdated={(updated) =>
+                      setPosts((prev) => prev.map((p) => (p._id === updated._id ? { ...p, ...updated } : p)))
+                    }
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
